@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Little Surprise ♡</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    font-family: Georgia, serif;
+    background: #f8e9ed;
+}
+
+#scene {
+    position: fixed;
+    inset: 0;
+}
+
+canvas {
+    display: block;
+}
+
+.panel {
+    position: fixed;
+    z-index: 5;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(88%, 360px);
+    padding: 30px 24px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 25px;
+    background: rgba(255,248,249,.78);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 15px 60px #a66b7c35;
+    transition: .8s ease;
+}
+
+.panel.hide {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -45%) scale(.8);
+}
+
+.eyebrow {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: #b56c86;
+}
+
+h1 {
+    margin: 15px 0 10px;
+    color: #754356;
+    font-size: 31px;
+    font-weight: normal;
+}
+
+.description {
+    color: #9b7180;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 22px;
+}
+
+.inputs {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+input {
+    width: 85px;
+    padding: 12px;
+    border: 1px solid #e8bdce;
+    border-radius: 12px;
+    text-align: center;
+    background: white;
+    color: #754356;
+    font-size: 20px;
+    outline: none;
+}
+
+button {
+    border: none;
+    cursor: pointer;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #e7a4bb, #bc6488);
+    color: white;
+    padding: 13px 25px;
+    letter-spacing: 2px;
+    font-size: 11px;
+    box-shadow: 0 7px 20px #bc648840;
+}
+
+#hint {
+    margin-top: 15px;
+    color: #b0788e;
+    font-size: 11px;
+    min-height: 14px;
+}
+
+.greeting {
+    position: fixed;
+    z-index: 3;
+    top: 7%;
+    width: 100%;
+    text-align: center;
+    color: #784356;
+    opacity: 0;
+    transition: opacity 1.5s;
+    pointer-events: none;
+    text-shadow: 0 2px 15px #fff;
+}
+
+.greeting.show {
+    opacity: 1;
+}
+
+.greeting small {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 5px;
+}
+
+.greeting h2 {
+    font-weight: normal;
+    font-size: clamp(28px, 7vw, 45px);
+    margin: 12px;
+}
+
+.greeting p {
+    font-size: 13px;
+}
+
+.bottom-note {
+    position: fixed;
+    z-index: 3;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #9b7180;
+    font: 10px Arial, sans-serif;
+    letter-spacing: 2px;
+    pointer-events: none;
+}
+
+#replay {
+    position: fixed;
+    z-index: 6;
+    bottom: 45px;
+    right: 18px;
+    padding: 10px 16px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#replay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media(max-height: 650px) {
+    .panel {
+        padding: 18px;
+    }
+
+    h1 {
+        font-size: 26px;
+        margin: 8px;
+    }
+
+    .description {
+        margin-bottom: 12px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="scene"></div>
+
+<section class="panel" id="panel">
+    <div class="eyebrow">A LITTLE SECRET FOR YOU</div>
+
+    <h1>Something is waiting ♡</h1>
+
+    <p class="description">
+        Ada kejutan kecil yang menunggumu.
+        Masukkan tanggal spesial untuk membukanya.
+    </p>
+
+    <div class="inputs">
+        <input id="day"
+               type="text"
+               inputmode="numeric"
+               maxlength="2"
+               placeholder="DD"
+               aria-label="Tanggal">
+
+        <input id="month"
+               type="text"
+               inputmode="numeric"
+               maxlength="2"
+               placeholder="MM"
+               aria-label="Bulan">
+    </div>
+
+    <button id="unlock">BUKA GEMBOK ♡</button>
+
+    <div id="hint">Petunjuk: tanggal yang spesial untuk kita.</div>
+</section>
+
+<div class="greeting" id="greeting">
+    <small>JUST FOR YOU</small>
+    <h2>A Bouquet For You ♡</h2>
+    <p>Semoga hari-harimu selalu punya alasan untuk mekar.</p>
+</div>
+
+<div class="bottom-note" id="bottomNote">
+    MADE WITH A LITTLE LOVE ♡
+</div>
+
+<button id="replay">ULANGI ↻</button>
+
+<script type="module">
+
+import * as THREE from
+'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+/* =========================
+   SCENE DAN KAMERA
+========================= */
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color("#f6e7eb");
+scene.fog = new THREE.FogExp2("#f6e7eb", 0.025);
+
+const camera = new THREE.PerspectiveCamera(
+    40,
+    innerWidth / innerHeight,
+    0.1,
+    100
+);
+
+camera.position.set(0, 0, 9);
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+renderer.setSize(innerWidth, innerHeight);
+
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+document.querySelector("#scene").appendChild(renderer.domElement);
+
+/* =========================
+   PENCAHAYAAN
+========================= */
+
+scene.add(
+    new THREE.HemisphereLight(
+        0xfff3f7,
+        0x76505f,
+        2.5
+    )
+);
+
+const mainLight = new THREE.DirectionalLight(
+    0xfff4e9,
+    3
+);
+
+mainLight.position.set(-3, 5, 7);
+scene.add(mainLight);
+
+const pinkLight = new THREE.PointLight(
+    0xffa4c9,
+    45,
+    20
+);
+
+pinkLight.position.set(3, 1, 4);
+scene.add(pinkLight);
+
+const warmLight = new THREE.PointLight(
+    0xffe3b7,
+    25,
+    15
+);
+
+warmLight.position.set(-4, -2, 3);
+scene.add(warmLight);
+
+/* =========================
+   MATERIAL
+========================= */
+
+function material(color, roughness = 0.5, metalness = 0) {
+    return new THREE.MeshStandardMaterial({
+        color,
+        roughness,
+        metalness
+    });
+}
+
+const goldMaterial = material("#dfb56f", 0.25, 0.75);
+
+const world = new THREE.Group();
+scene.add(world);
+
+/* =========================
+   GEMBOK 3D
+========================= */
+
+const lock = new THREE.Group();
+world.add(lock);
+
+// Badan gembok
+const lockBody = new THREE.Mesh(
+    new THREE.BoxGeometry(1.45, 1.45, 0.38),
+    material("#d69bb2", 0.28, 0.25)
+);
+
+lockBody.position.y = -0.4;
+lock.add(lockBody);
+
+// Bagian depan gembok
+const lockFace = new THREE.Mesh(
+    new THREE.BoxGeometry(1.32, 1.32, 0.06),
+    material("#f0c7d6", 0.3, 0.15)
+);
+
+lockFace.position.set(0, -0.4, 0.22);
+lock.add(lockFace);
+
+// Lengkungan besi gembok
+const shackleCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.4, 0.05, 0.05),
+    new THREE.Vector3(-0.4, 0.45, 0.05),
+    new THREE.Vector3(-0.3, 0.78, 0.05),
+    new THREE.Vector3(0, 0.88, 0.05),
+    new THREE.Vector3(0.3, 0.78, 0.05),
+    new THREE.Vector3(0.4, 0.45, 0.05),
+    new THREE.Vector3(0.4, 0.05, 0.05)
+]);
+
+const shackle = new THREE.Mesh(
+    new THREE.TubeGeometry(
+        shackleCurve,
+        48,
+        0.09,
+        12,
+        false
+    ),
+    goldMaterial
+);
+
+lock.add(shackle);
+
+// Lubang kunci
+const keyholeCircle = new THREE.Mesh(
+    new THREE.CircleGeometry(0.1, 32),
+    material("#714257")
+);
+
+keyholeCircle.position.set(0, -0.3, 0.27);
+lock.add(keyholeCircle);
+
+const keyholeStem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.065, 0.19, 24),
+    material("#714257")
+);
+
+keyholeStem.position.set(0, -0.45, 0.27);
+lock.add(keyholeStem);
+
+// Ornamen kecil
+const ornament = new THREE.Mesh(
+    new THREE.TorusGeometry(0.12, 0.018, 8, 32),
+    goldMaterial
+);
+
+ornament.position.set(0, -0.83, 0.25);
+lock.add(ornament);
+
+/* =========================
+   BOKEH DAN PARTIKEL CAHAYA
+========================= */
+
+const bokehParticles = [];
+
+for (let i = 0; i < 90; i++) {
+
+    const radius = 0.025 + Math.random() * 0.09;
+
+    const particle = new THREE.Mesh(
+        new THREE.CircleGeometry(radius, 24),
+        new THREE.MeshBasicMaterial({
+            color: Math.random() > 0.5
+                ? "#fff4f8"
+                : "#f5bdd0",
+            transparent: true,
+            opacity: 0.35,
+            depthWrite: false
+        })
+    );
+
+    particle.position.set(
+        (Math.random() - 0.5) * 13,
+        (Math.random() - 0.5) * 9,
+        -1 - Math.random() * 8
+    );
+
+    particle.userData.baseY = particle.position.y;
+    particle.userData.phase = Math.random() * 10;
+    particle.userData.speed = 0.3 + Math.random();
+
+    scene.add(particle);
+    bokehParticles.push(particle);
+}
+
+// Bintik cahaya kecil
+const starPositions = [];
+
+for (let i = 0; i < 350; i++) {
+    starPositions.push(
+        (Math.random() - 0.5) * 17,
+        (Math.random() - 0.5) * 12,
+        -2 - Math.random() * 10
+    );
+}
+
+const starGeometry = new THREE.BufferGeometry();
+
+starGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(starPositions, 3)
+);
+
+const stars = new THREE.Points(
+    starGeometry,
+    new THREE.PointsMaterial({
+        color: "#fff5f8",
+        size: 0.035,
+        transparent: true,
+        opacity: 0.8
+    })
+);
+
+scene.add(stars);
+
+/* =========================
+   MEMBUAT KELopak BUNGA 3D
+========================= */
+
+function createPetal(color, size = 1) {
+
+    const geometry = new THREE.SphereGeometry(
+        0.5,
+        20,
+        16
+    );
+
+    const petal = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.42,
+            side: THREE.DoubleSide
+        })
+    );
+
+    // Bentuk kelopak memanjang dan melengkung
+    petal.scale.set(
+        size * 0.36,
+        size * 0.72,
+        size * 0.12
+    );
+
+    petal.position.y = size * 0.38;
+    petal.rotation.x = -0.15;
+
+    return petal;
+}
+
+/* =========================
+   MEMBUAT BUNGA LILY
+========================= */
+
+function createLily(parent, x, y, z, size, color) {
+
+    const flower = new THREE.Group();
+
+    flower.position.set(x, y, z);
+
+    parent.add(flower);
+
+    // Enam kelopak lily
+    for (let i = 0; i < 6; i++) {
+
+        const petal = createPetal(color, size);
+
+        petal.rotation.z = i * Math.PI / 3;
+
+        petal.rotation.x =
+            -0.15 + Math.random() * 0.12;
+
+        flower.add(petal);
+    }
+
+    // Bagian tengah bunga
+    const center = new THREE.Mesh(
+        new THREE.SphereGeometry(
+            size * 0.105,
+            20,
+            16
+        ),
+        material("#d9aa54", 0.4)
+    );
+
+    center.position.z = size * 0.12;
+
+    flower.add(center);
+
+    // Benang sari
+    for (let i = 0; i < 5; i++) {
+
+        const angle = i * Math.PI * 2 / 5;
+
+        const stamen = new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                0.008,
+                0.013,
+                size * 0.45,
+                8
+            ),
+            material("#f5dfae")
+        );
+
+        stamen.position.set(
+            Math.cos(angle) * size * 0.08,
+            Math.sin(angle) * size * 0.08,
+            size * 0.17
+        );
+
+        stamen.rotation.z = -angle + Math.PI / 2;
+
+        flower.add(stamen);
+
+        const tip = new THREE.Mesh(
+            new THREE.SphereGeometry(size * 0.025, 10, 8),
+            material("#a85e48")
+        );
+
+        tip.position.set(
+            Math.cos(angle) * size * 0.25,
+            Math.sin(angle) * size * 0.25,
+            size * 0.18
+        );
+
+        flower.add(tip);
+    }
+
+    return flower;
+}
+
+/* =========================
+   MEMBUAT DAUN
+========================= */
+
+function createLeaf(parent, x, y, z, size, angle, color = "#47745a") {
+
+    const leaf = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 16, 10),
+        material(color, 0.7)
+    );
+
+    leaf.scale.set(
+        size * 0.18,
+        size * 0.65,
+        size * 0.06
+    );
+
+    leaf.position.set(x, y, z);
+    leaf.rotation.z = angle;
+
+    parent.add(leaf);
+
+    return leaf;
+}
+
+/* =========================
+   MEMBUAT BUNGA KECIL
+========================= */
+
+function createSmallFlower(parent, x, y, z, size, color) {
+
+    const flower = new THREE.Group();
+
+    flower.position.set(x, y, z);
+
+    parent.add(flower);
+
+    // Kelopak kecil berlapis
+    for (let i = 0; i < 14; i++) {
+
+        const angle = i * Math.PI * 2 / 14;
+
+        const petal = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 12, 8),
+            material(color, 0.65)
+        );
+
+        petal.scale.set(
+            size * 0.22,
+            size * 0.42,
+            size * 0.12
+        );
+
+        petal.position.set(
+            Math.cos(angle) * size * 0.25,
+            Math.sin(angle) * size * 0.25,
+            0
+        );
+
+        petal.rotation.z = angle;
+
+        flower.add(petal);
+    }
+
+    const center = new THREE.Mesh(
+        new THREE.SphereGeometry(size * 0.15, 12, 10),
+        material("#dfbb77")
+    );
+
+    flower.add(center);
+
+    return flower;
+}
+
+/* =========================
+   MERANGKAI BUKET BUNGA
+========================= */
+
+const bouquet = new THREE.Group();
+
+bouquet.visible = false;
+
+world.add(bouquet);
+
+// Kertas pembungkus buket
+const wrapper = new THREE.Mesh(
+    new THREE.ConeGeometry(1.4, 2.0, 7, 1, true),
+    material("#fff9f6", 0.75)
+);
+
+wrapper.position.set(0, -1.2, -0.15);
+wrapper.rotation.x = Math.PI;
+
+bouquet.add(wrapper);
+
+// Lapisan dalam pembungkus
+const innerWrapper = new THREE.Mesh(
+    new THREE.ConeGeometry(1.25, 1.7, 7, 1, true),
+    material("#f0dce3", 0.8)
+);
+
+innerWrapper.position.set(0, -1.15, -0.1);
+innerWrapper.rotation.x = Math.PI;
+
+bouquet.add(innerWrapper);
+
+// Batang bunga
+for (let i = 0; i < 13; i++) {
+
+    const x = (Math.random() - 0.5) * 1.5;
+    const height = 1.5 + Math.random() * 1.1;
+
+    const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+            0.015,
+            0.025,
+            height,
+            8
+        ),
+        material("#4c765c")
+    );
+
+    stem.position.set(
+        x,
+        -0.5 + height * 0.35,
+        -0.35
+    );
+
+    stem.rotation.z = (Math.random() - 0.5) * 0.3;
+
+    bouquet.add(stem);
+
+    // Daun pada batang
+    for (let j = 0; j < 3; j++) {
+
+        createLeaf(
+            bouquet,
+            x + (Math.random() - 0.5) * 0.3,
+            -0.3 + j * 0.25,
+            -0.25,
+            0.6,
+            Math.random() * 1.5,
+            "#47745a"
+        );
+    }
+}
+
+// Lily besar berwarna pink
+createLily(bouquet, -0.75, 0.55, 0.45, 0.78, "#e58aaf");
+
+createLily(bouquet, 0.00, 0.75, 0.65, 0.85, "#ed9cbd");
+
+createLily(bouquet, 0.76, 0.45, 0.4, 0.73, "#d96e9d");
+
+createLily(bouquet, 0.25, -0.05, 0.75, 0.68, "#e58ab2");
+
+createLily(bouquet, -0.48, -0.20, 0.78, 0.56, "#eea4c1");
+
+// Bunga kecil merah marun, pink, dan putih
+const smallFlowers = [
+    [-1.0, -0.4, 0.4, 0.35, "#a52c52"],
+    [-0.8, -0.65, 0.6, 0.35, "#c32d66"],
+    [-0.48, -0.52, 0.8, 0.3, "#fff0e7"],
+    [-0.15, -0.58, 0.9, 0.32, "#f3d5ce"],
+    [0.18, -0.60, 0.9, 0.32, "#a92855"],
+    [0.65, -0.48, 0.8, 0.36, "#c72f69"],
+    [0.98, -0.22, 0.5, 0.30, "#f4d5c9"],
+    [-1.0, 0.00, 0.4, 0.30, "#fff2e9"],
+    [-0.35, 0.18, 0.55, 0.28, "#b52d5d"],
+    [0.42, 0.20, 0.5, 0.30, "#f5e3d9"],
+    [0.80, -0.70, 0.65, 0.30, "#e8b1c2"]
+];
+
+for (const flower of smallFlowers) {
+    createSmallFlower(bouquet, ...flower);
+}
+
+// Daun tambahan di bagian atas buket
+for (let side of [-1, 1]) {
+
+    for (let i = 0; i < 8; i++) {
+
+        const x = side * (0.45 + i * 0.1);
+        const y = 0.2 + i * 0.16;
+
+        createLeaf(
+            bouquet,
+            x,
+            y,
+            -0.25,
+            0.8,
+            side * 0.6,
+            "#315c49"
+        );
+    }
+}
+
+/* =========================
+   PITA BUKET
+========================= */
+
+const ribbonMaterial = material("#e9b0c4", 0.3);
+
+for (const side of [-1, 1]) {
+
+    const ribbon = new THREE.Mesh(
+        new THREE.TorusGeometry(
+            0.28,
+            0.045,
+            10,
+            36,
+            Math.PI * 1.5
+        ),
+        ribbonMaterial
+    );
+
+    ribbon.position.set(
+        side * 0.3,
+        -1.95,
+        0.35
+    );
+
+    ribbon.rotation.z = side * 0.6;
+
+    bouquet.add(ribbon);
+}
+
+// Ekor pita
+const ribbonTail = new THREE.Mesh(
+    new THREE.BoxGeometry(0.13, 0.55, 0.035),
+    ribbonMaterial
+);
+
+ribbonTail.position.set(-0.12, -2.2, 0.35);
+ribbonTail.rotation.z = -0.2;
+
+bouquet.add(ribbonTail);
+
+const ribbonTail2 = ribbonTail.clone();
+
+ribbonTail2.position.x = 0.2;
+ribbonTail2.rotation.z = 0.2;
+
+bouquet.add(ribbonTail2);
+
+/* =========================
+   ANIMASI MEMBUKA GEMBOK
+========================= */
+
+let unlocked = false;
+
+const panel = document.querySelector("#panel");
+const hint = document.querySelector("#hint");
+const greeting = document.querySelector("#greeting");
+const replay = document.querySelector("#replay");
+
+function unlockWebsite() {
+
+    if (unlocked) return;
+
+    const day = document.querySelector("#day").value.trim();
+    const month = document.querySelector("#month").value.trim();
+
+    if (day !== "23" || month !== "05") {
+
+        hint.textContent =
+            "Belum terbuka ♡ Coba tanggal yang benar.";
+
+        // Goyangan gembok jika tanggal salah
+        const originalX = lock.position.x;
+        const started = performance.now();
+
+        function shake(now) {
+
+            const progress = Math.min(
+                (now - started) / 400,
+                1
+            );
+
+            lock.position.x =
+                originalX +
+                Math.sin(progress * 35) * 0.08 * (1 - progress);
+
+            if (progress < 1) {
+                requestAnimationFrame(shake);
+            } else {
+                lock.position.x = originalX;
+            }
+        }
+
+        requestAnimationFrame(shake);
+
+        return;
+    }
+
+    unlocked = true;
+
+    hint.textContent = "Gembok terbuka ♡";
+
+    panel.classList.add("hide");
+
+    setTimeout(() => {
+
+        bouquet.visible = true;
+
+        bouquet.scale.setScalar(0.01);
+
+        bouquet.position.y = -0.1;
+
+        const started = performance.now();
+        const duration = 1300;
+
+        function bloom(now) {
+
+            const progress = Math.min(
+                (now - started) / duration,
+                1
+            );
+
+            // Gerakan membesar yang halus
+            const eased =
+                1 - Math.pow(1 - progress, 3);
+
+            bouquet.scale.setScalar(0.9 * eased);
+
+            bouquet.position.y =
+                -0.1 + 0.1 * eased;
+
+            lock.scale.setScalar(
+                Math.max(0.001, 1 - progress)
+            );
+
+            if (progress < 1) {
+                requestAnimationFrame(bloom);
+            } else {
+                lock.visible = false;
+            }
+        }
+
+        requestAnimationFrame(bloom);
+
+        greeting.classList.add("show");
+        replay.classList.add("show");
+
+        document.querySelector("#bottomNote").textContent =
+            "A LITTLE BOUQUET, MADE JUST FOR YOU ♡";
+
+    }, 500);
+}
+
+document.querySelector("#unlock").addEventListener(
+    "click",
+    unlockWebsite
+);
+
+document.querySelector("#day").addEventListener(
+    "input",
+    event => {
+        if (event.target.value.length === 2) {
+            document.querySelector("#month").focus();
+        }
+    }
+);
+
+document.querySelectorAll("input").forEach(input => {
+
+    input.addEventListener("keydown", event => {
+
+        if (event.key === "Enter") {
+            unlockWebsite();
+        }
+
+    });
+
+});
+
+/* =========================
+   ULANGI WEBSITE
+========================= */
+
+replay.addEventListener("click", () => {
+
+    unlocked = false;
+
+    lock.visible = true;
+    lock.scale.setScalar(1);
+    lock.position.set(0, 0, 0);
+
+    bouquet.visible = false;
+    bouquet.scale.setScalar(0.9);
+
+    panel.classList.remove("hide");
+    greeting.classList.remove("show");
+    replay.classList.remove("show");
+
+    document.querySelector("#day").value = "";
+    document.querySelector("#month").value = "";
+
+    hint.textContent =
+        "Petunjuk: tanggal yang spesial untuk kita.";
+
+    document.querySelector("#bottomNote").textContent =
+        "MADE WITH A LITTLE LOVE ♡";
+});
+
+/* =========================
+   GERAKAN KAMERA
+========================= */
+
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener("pointermove", event => {
+
+    mouseX = (event.clientX / innerWidth - 0.5) * 0.5;
+
+    mouseY = (event.clientY / innerHeight - 0.5) * 0.3;
+
+});
+
+window.addEventListener("resize", () => {
+
+    camera.aspect = innerWidth / innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(innerWidth, innerHeight);
+
+});
+
+/* =========================
+   LOOP ANIMASI
+========================= */
+
+function animate(time) {
+
+    requestAnimationFrame(animate);
+
+    const t = time * 0.001;
+
+    // Gembok melayang lembut
+    if (lock.visible) {
+
+        lock.rotation.y =
+            Math.sin(t * 0.6) * 0.06;
+
+        lock.rotation.x =
+            Math.cos(t * 0.5) * 0.025;
+
+        lock.position.y =
+            Math.sin(t * 1.1) * 0.06;
+
+    }
+
+    // Buket bergerak perlahan
+    if (bouquet.visible) {
+
+        bouquet.rotation.y =
+            Math.sin(t * 0.4) * 0.045;
+
+        bouquet.rotation.x =
+            Math.sin(t * 0.3) * 0.02;
+
+    }
+
+    // Efek parallax
+    world.rotation.y +=
+        (mouseX - world.rotation.y) * 0.025;
+
+    world.rotation.x +=
+        (-mouseY - world.rotation.x) * 0.025;
+
+    // Bokeh melayang
+    bokehParticles.forEach(particle => {
+
+        particle.position.y =
+            particle.userData.baseY +
+            Math.sin(
+                t * particle.userData.speed +
+                particle.userData.phase
+            ) * 0.15;
+
+        particle.material.opacity =
+            0.15 +
+            0.2 * (
+                0.5 +
+                0.5 * Math.sin(t + particle.userData.phase)
+            );
+
+    });
+
+    pinkLight.intensity =
+        40 + Math.sin(t * 1.2) * 8;
+
+    renderer.render(scene, camera);
+
+}
+
+requestAnimationFrame(animate);
+
+</script>
+
+</body>
+</html>
